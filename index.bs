@@ -2064,8 +2064,10 @@ and |max depth|:
 </div>
 
 <div algorithm>
-To <dfn>await a navigation</dfn> given |context|, |request|, |wait condition|, and optionally
-|history handling| (default: "<code>default</code>") and |ignore cache| (default: false):
+
+To <dfn>await a navigation</dfn> given |context|, |request|, |wait condition|,
+and optionally |history handling| (default: "<code>default</code>") and |ignore
+cache| (default: false):
 
 1. Let |navigation id| be the string representation of a
    [[!RFC4122|UUID]] based on truly random, or pseudo-random numbers.
@@ -2346,6 +2348,9 @@ The [=remote end steps=] with |command parameters| are:
 
 1. Assert: |context| is not null.
 
+1. Let |wait condition| be the value of the <code>wait</code> field of |command
+   parameters| if present, or "<code>none</code>" otherwise.
+
 1. Let |ignore cache| be the the value of the <code>ignoreCache</code> field of |command
    parameters| if present, or false otherwise.
 
@@ -2356,8 +2361,8 @@ The [=remote end steps=] with |command parameters| are:
 1. Let |request| be a new [=/request=] whose URL is |url|.
 
 1. Return the result of [=await a navigation=] with |context|, |request|, |wait
-   condition|, history handling "<code>reload</code>", and ignore
-   cache |ignore cache|.
+   condition|, history handling "<code>reload</code>", and ignore cache |ignore
+   cache|.
 
 </div>
 
