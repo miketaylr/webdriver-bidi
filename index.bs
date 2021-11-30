@@ -2214,7 +2214,8 @@ The <dfn export for=commands>browsingContext.create</dfn> command creates a new
       BrowsingContextCreateType = "tab" / "window"
 
       BrowsingContextCreateParameters = {
-        type: BrowsingContextCreateType
+        type: BrowsingContextCreateType,
+        ?context: BrowsingContext
       }
       </pre>
    </dd>
@@ -2234,6 +2235,13 @@ The [=remote end steps=] with |command parameters| are:
   1. Let |type| be the value of the <code>type</code> field of
      |command parameters|.
 
+  1. Let |reference context id| be the value of the <code>context</code> field
+     of |command parameters|, if present, or null otherwise.
+
+  1. If |reference context id| is not null, let |reference context| be the
+     result of [=trying=] to [=get a browsing context=] with
+     |reference context id|. Otherwise let |reference context| be null.
+
   <!-- This is based on step 5 of https://w3c.github.io/webdriver/#new-window,
        but without using the "current browsing context" concept. -->
   1. Create a new [=top-level browsing context=] by running the [=window open
@@ -2241,19 +2249,20 @@ The [=remote end steps=] with |command parameters| are:
      <var ignore>target</var> set to the empty string, and
      <var ignore>features</var> set to "<code>noopener</code>". This must be
      done without invoking the [=/focusing steps=] for the created browsing
-     context. If |type| is "<code>tab</code>", and the implementation supports
-     multiple browsing contexts in the same OS window, the new browsing context
-     should share an OS window with any other [=top-level browsing context=]. If
-     |type| is "<code>window</code>", and the implementation supports multiple
-     browsing contexts in separate OS windows, the created browsing context
-     should be in a new OS window. In all other cases the details of how the
-     browsing context is presented to the user are implementation defined.
+     context. Which OS window the new [=/browsing context=] is created in
+     depends on |type| and |reference context|:
 
-     Issue: HTML's [=window open steps=] depend on the "entry global object"
-     and WebDriver's <a href="https://w3c.github.io/webdriver/#new-window">New
-     Window</a> command depends on the "current browsing context". Given that we
-     don't have any such implicit context here, what OS window should new tabs
-     be opened in?
+     * If |type| is "<code>tab</code>" and the implementation supports
+       multiple browsing contexts in the same OS window, the new browsing context
+       should share an OS window with |reference context| if not null, and any
+       other [=top-level browsing context=] otherwise.
+
+     * If |type| is "<code>window</code>", and the implementation supports
+       multiple browsing contexts in separate OS windows, the created browsing
+       context should be in a new OS window.
+
+     * Otherwise, the details of how the browsing context is presented to the
+       user are implementation defined.
 
   1. Let |context id| be the [=browsing context id=] of the newly created
      [=/browsing context=].
