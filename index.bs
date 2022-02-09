@@ -239,6 +239,8 @@ Command = {
 CommandData = (
   SessionCommand //
   BrowsingContextCommand
+  ScriptCommand //
+  InputCommand
 )
 
 EmptyParams = { *text }
@@ -4284,6 +4286,243 @@ The [=remote end subscribe steps=], with [=subscribe priority=] 10, given
 
         1. If [=log event buffer=] contains |other context id|, remove |event|
            from [=log event buffer=][|other context id|].
+
+</div>
+
+## Input ## {#module-input}
+
+The <dfn export for=modules>input</dfn> module contains functionality for
+simulated user input.
+
+### Definition ### {#module-input-definition}
+
+[=remote end definition=]
+
+<pre class="cddl remote-cddl">
+
+InputCommand = (
+  InputPerformActionsCommand //
+  InputReleaseActionsCommand
+)
+</pre>
+
+### Commands ### {#module-input-commands}
+
+#### The input.performActions Command ####  {#command-input-performActions}
+
+The <dfn export for=commands>input.performActions</dfn> command performs a
+specified sequence of user input actions.
+
+<dl>
+   <dt>Command Type</dt>
+   <dd>
+    <pre class="cddl remote-cddl">
+      InputPerformActionsCommand = {
+        method: "input.performActions",
+        params: InputPerformActionsParameters
+      };
+
+      InputPerformActionsParameters = {
+        context: BrowsingContext,
+        actions: [* InputSourceActions]
+      };
+
+      InputSourceActions = (
+        NoneSourceActions //
+        KeySourceActions //
+        PointerSourceActions //
+        WheelSourceActions
+      );
+
+      NoneSourceActions = {
+        type: "none",
+        actions: [* NoneSourceAction]
+      };
+
+      NoneSourceAction = PauseAction;
+
+      KeySourceActions = {
+        type: "key",
+        actions: [* KeySourceAction]
+      };
+
+      KeySourceAction = (
+        PauseAction //
+        KeyDownAction //
+        KeyUpAction
+      );
+
+      PointerSourceActions = {
+        type: "pointer",
+        ? parameters: PointerParameters,
+        actions: [* PointerSourceAction]
+      };
+
+      PointerParameters = {
+        ? pointerType: "mouse" / "pen" / "touch"
+      };
+
+      PointerSourceAction = (
+        PauseAction //
+        PointerDownAction //
+        PointerUpAction //
+        PointerMoveAction
+      );
+
+      WheelSourceActions = {
+        type: "wheel",
+        actions: [* WheelSourceAction]
+      };
+
+      WheelSourceActions = (
+        PauseAction //
+        WheelScrollAction
+      );
+
+      PauseAction = {
+        type: "pause",
+        ? duration: uint
+      };
+
+      KeyDownAction = {
+        type: "keyDown",
+        value: text
+      };
+
+      KeyUpAction = {
+        type: "keyUp",
+        value: text
+      };
+
+      PointerUpAction = {
+        type: "pointerUp",
+        button: uint,
+        PointerCommonProperties,
+      };
+
+      PointerDownAction = {
+        type: "pointerUp",
+        button: uint,
+        PointerCommonProperties
+      };
+
+      PointerMoveAction = {
+        type: "pointerMove",
+        x: uint,
+        y: uint,
+        ? duration: uint,
+        ? origin: Origin,
+        PointerCommonProperties,
+      };
+
+      WheelScrollAction = {
+        type: "scroll",
+        x: uint,
+        y: unint,
+        deltaX: int,
+        deltaY: int,
+        ? duration: uint,
+        ? origin: Origin,
+        PointerCommonProperties,
+      };
+
+      PointerCommonProperties = (
+        ? width: uint,
+        ? height: uint,
+        ? pressure: float,
+        ? tangentialPressure: float,
+        ? tiltX: int,
+        ? tiltY: int,
+        ? twist: uint,
+        ? altitudeAngle: float,
+        ? azimuthAngle: float,
+      )
+
+      Origin = "viewport" / "pointer" / ElementOrigin;
+
+      //TODO ElementOrigin
+    </pre>
+   </dd>
+   <dt>Return Type</dt>
+   <dd>
+    <pre class="cddl local-cddl">
+        EmptyResult
+    </pre>
+   </dd>
+</dl>
+
+<div algorithm="remote end steps for input.performActions">
+
+The [=remote end steps=] with |session| and |command parameters| are:
+
+1. Let |context id| be the value of the <code>context</code> field of
+   |command parameters|.
+
+1. Let |context| be the result of [=trying=] to [=get a browsing context=]
+   with |context id|.
+
+1. If |context| has an active [=user prompt=], return [=error=] with [=error
+   code=] [=unexpected alert open=].
+
+1. Let |actions by tick| be the result of trying to [=extract an action
+   sequence=] with |command parameters|.
+
+1. [=Try=] to [=dispatch actions=] with argument |actions by tick|.
+
+1. Return [=success=] with data null.
+
+</div>
+
+The <dfn export for=commands>input.releaseActions</dfn> command resets the input
+state associated with the current session.
+
+<dl>
+   <dt>Command Type</dt>
+   <dd>
+    <pre class="cddl remote-cddl">
+      InputReleaseActionsCommand = {
+        method: "input.releaseActions",
+        params: ReleaseActionsParameters
+      };
+
+      InputReleaseActionsParameters = {
+        context: BrowsingContext,
+      }
+    </pre>
+   </dd>
+   <dt>Return Type</dt>
+   <dd>
+    <pre class="cddl local-cddl">
+        EmptyResult
+    </pre>
+   </dd>
+</dl>
+
+<div algorithm="remote end steps for input.releaseActions">
+
+The [=remote end steps=] given <var ignore>session</var>, and <var
+ignore>command parameters</var> are:
+
+1. Let |context id| be the value of the <code>context</code> field of
+   |command parameters|.
+
+1. Let |context| be the result of [=trying=] to [=get a browsing context=]
+   with |context id|.
+
+1. If |context| has an active [=user prompt=], return [=error=] with [=error
+   code=] [=unexpected alert open=].
+
+1. Let |undo actions| be equal to the |session|’s [=input cancel list=] in reverse order.
+
+1. [=Dispatch tick actions=] with arguments |undo actions| and duration 0.
+
+1. Let |session|’s [=input cancel list=] be an empty List.
+
+1. Let the |session|’s [=input state table=] be an empty Map.
+
+1. Let |session|’s [=active input sources=] be an empty List.
+
+1. Return [=success=] with data null.
 
 </div>
 
